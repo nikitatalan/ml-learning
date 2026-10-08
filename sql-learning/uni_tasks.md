@@ -52,7 +52,7 @@ GROUP BY l.language
 2. Contact_Information ( 
     - player_email PK, 
     - phone, 
-    - player_id FK -> Player(player_id) UNIQUE NOT NULL )
+    - player_id FK -> Player(player_id) )
 3. Purchase ( 
     - purchase_id PK, 
     - purchase_date, 
@@ -65,9 +65,8 @@ GROUP BY l.language
 5. Platform ( 
     - platform_id PK, 
     - platform_name )
-6. Studio ( 
-    - studio_id PK, 
-    - studio_name, 
+6. Studio (  
+    - studio_name PK, 
     - studio_country, 
     - studio_email )
 7. Game ( 
@@ -78,7 +77,7 @@ GROUP BY l.language
     - game_price, 
     - platform_id FK -> Platform(platform_id), 
     - genre_id FK -> Genre(genre_id), 
-    - studio_id FK -> Studio(studio_id) )
+    - studio_name FK -> Studio(studio_name) )
 8. Store ( 
     - store_id PK, 
     - store_name, 
