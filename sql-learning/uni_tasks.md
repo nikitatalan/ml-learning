@@ -85,6 +85,6 @@ GROUP BY l.language
 9. PurchaseLineItem ( 
     - item_id PK, 
     - quantity, 
-    - item_price,
+    - price,
     - purchase_id FK -> Purchase(purchase_id),
     - game_id FK -> Game(game_id) )

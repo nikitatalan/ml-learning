@@ -1,0 +1,276 @@
+-- Database assignment - Information Diamond
+-- Group 102
+-- Nikita Talan (3752429) and Naman Sarup Lohchab (3726649)
+
+
+-- Set path to our database, so we don't have to write dab_dcsinf26271a_44.table every time
+
+SET search_path TO dab_dcsinf26271a_44;
+
+-- We use the DROP command to remove any previous version of tables that might exist due to our multiple attempts at this exercise.
+
+DROP TABLE IF EXISTS purchase_line_item;
+DROP TABLE IF EXISTS purchase;
+DROP TABLE IF EXISTS game;
+DROP TABLE IF EXISTS contact_information;
+DROP TABLE IF EXISTS player;
+DROP TABLE IF EXISTS store;
+DROP TABLE IF EXISTS studio;
+DROP TABLE IF EXISTS platform;
+DROP TABLE IF EXISTS genre;
+
+----------------------------------
+-- Assignment 2/3: CREATE TABLE --
+----------------------------------
+
+-- We used SERIAL data type for the new IDs for which we didn't have corresponding columns in the old tables.
+-- Basically, SERIAL generates number starting from 1 that we then use as the IDs.
+
+
+CREATE TABLE genre(
+    genre_id SERIAL PRIMARY KEY, 
+    genre_name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE platform(
+    platform_id SERIAL PRIMARY KEY, 
+    platform_name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE studio(
+    studio_name TEXT PRIMARY KEY,
+    studio_country TEXT NOT NULL,
+    studio_email TEXT NOT NULL
+);
+
+CREATE TABLE store(
+    store_id SERIAL PRIMARY KEY, 
+    store_name TEXT NOT NULL UNIQUE,
+    store_city TEXT
+);
+
+CREATE TABLE player(
+    player_id INTEGER PRIMARY KEY, 
+    player_name TEXT NOT NULL,
+    player_username TEXT NOT NULL UNIQUE,
+    date_of_birth DATE,
+    country TEXT,
+    favorite_genre_id INTEGER NOT NULL,
+        FOREIGN KEY (favorite_genre_id) REFERENCES genre (genre_id)
+);
+
+CREATE TABLE contact_information(
+    player_email TEXT PRIMARY KEY,
+    phone TEXT,
+    player_id INTEGER NOT NULL UNIQUE,
+        FOREIGN KEY (player_id) REFERENCES player (player_id)
+);
+
+CREATE TABLE game(
+    game_id INTEGER PRIMARY KEY, 
+    title TEXT NOT NULL,
+    release_year INTEGER,
+    game_price DOUBLE PRECISION,
+    rating DOUBLE PRECISION,
+    platform_id INTEGER NOT NULL,
+        FOREIGN KEY (platform_id) REFERENCES platform (platform_id),
+    genre_id INTEGER NOT NULL,
+        FOREIGN KEY (genre_id) REFERENCES genre (genre_id),
+    studio_name TEXT NOT NULL,
+        FOREIGN KEY (studio_name) REFERENCES studio (studio_name)
+);
+
+CREATE TABLE purchase(
+    purchase_id INTEGER PRIMARY KEY, 
+    purchase_date DATE,
+    payment_method TEXT,
+    player_id INTEGER NOT NULL,
+        FOREIGN KEY (player_id) REFERENCES player (player_id),
+    store_id INTEGER NOT NULL,
+        FOREIGN KEY (store_id) REFERENCES store (store_id)
+);
+
+-- Price corresponds to the total price of the line
+
+CREATE TABLE purchase_line_item(
+    item_id SERIAL PRIMARY KEY, 
+    quantity INTEGER,
+    price DOUBLE PRECISION,
+    purchase_id INTEGER NOT NULL,
+        FOREIGN KEY (purchase_id) REFERENCES purchase (purchase_id),
+    game_id INTEGER NOT NULL,
+        FOREIGN KEY (game_id) REFERENCES game (game_id)
+);
+
+--------------------
+-- Data migration --
+--------------------
+
+-- Insert into genre table
+
+INSERT INTO genre (genre_name)
+SELECT DISTINCT genre
+FROM games.games
+WHERE genre IS NOT NULL;
+
+-- Insert into player table, while converting TEXT type dateofbirth to DATE type date_of_birth
+
+INSERT INTO player
+    (player_id, player_name, player_username, date_of_birth, country, favorite_genre_id)
+SELECT DISTINCT
+    p.playerid,
+    p.playername,
+    p.playerusername,
+    NULLIF(p.dateofbirth, '')::DATE,
+    p.country,
+    g.genre_id
+FROM games.players p
+JOIN genre AS g
+    ON g.genre_name = p.favoritegenre;
+
+-- Insert into contact_information table
+
+INSERT INTO contact_information
+    (player_email, phone, player_id)
+SELECT DISTINCT
+    email,
+    phone,
+    playerid
+FROM games.players;
+
+-- Insert into studio table
+
+INSERT INTO studio
+    (studio_name, studio_country, studio_email)
+SELECT DISTINCT
+    developername,
+    developercountry,
+    developeremail
+FROM games.games
+WHERE developername IS NOT NULL;
+
+-- Insert into platform table
+
+INSERT INTO platform (platform_name)
+SELECT DISTINCT platform
+FROM games.games
+WHERE platform IS NOT NULL;
+
+-- Insert into store table
+
+INSERT INTO store (store_name, store_city)
+SELECT DISTINCT
+    storename,
+    storecity
+FROM games.purchases
+WHERE storename IS NOT NULL;
+
+-- Insert into game table
+
+INSERT INTO game
+    (game_id, title, release_year,  game_price, rating,
+     platform_id, genre_id, studio_name)
+SELECT
+    g.gameid,
+    g.gametitle,
+    g.releaseyear,
+    g.price,
+    g.rating,
+    p.platform_id,
+    ge.genre_id,
+    g.developername
+FROM games.games AS g
+JOIN platform AS p
+    ON p.platform_name = g.platform
+JOIN genre AS ge
+    ON ge.genre_name = g.genre;
+
+-- Insert into purchase table, while converting TEXT type purchasedate to DATE type purchase_date
+
+INSERT INTO purchase
+    (purchase_id, purchase_date, payment_method, player_id, store_id)
+SELECT DISTINCT
+    src.saleid,
+    NULLIF(src.purchasedate, '')::DATE,
+    src.paymentmethod,
+    pl.player_id,
+    st.store_id
+FROM games.purchases AS src
+JOIN player AS pl
+    ON pl.player_username = src.playerusername
+JOIN store AS st
+    ON st.store_name = src.storename
+   AND st.store_city = src.storecity;
+
+-- Insert into purchase_line_item table, while connecting three initial tables on name and id
+
+INSERT INTO purchase_line_item
+    (quantity, price, purchase_id, game_id)
+SELECT
+    src.quantity,
+    src.totalprice,
+    src.saleid,
+    g.game_id
+FROM games.purchases AS src
+JOIN game AS g
+    ON g.title = src.gametitle
+   AND g.studio_name = src.developername
+JOIN platform AS p
+    ON p.platform_id = g.platform_id
+   AND p.platform_name = src.gameplatform
+JOIN genre AS ge
+    ON ge.genre_id = g.genre_id
+   AND ge.genre_name = src.gamegenre;
+
+-----------------------------------------
+-- Assignment 3/3: queries and changes --
+-----------------------------------------
+
+-- All purchases made by player BlazeJordan96
+
+SELECT p.purchase_id, p.purchase_date, p.payment_method, pl.player_username
+FROM purchase p, player pl
+WHERE p.player_id = pl.player_id AND pl.player_username = 'BlazeJordan96';
+
+-- All games developed by studios located in Japan
+
+SELECT g.game_id, g.title, s.studio_country
+FROM game g, studio s
+WHERE g.studio_name = s.studio_name AND s.studio_country = 'Japan';
+
+-- All players who have spent more than 7500 in total
+
+SELECT pl.player_id, pl.player_name, pl.player_username, SUM(p.price) AS total_spent
+FROM player pl, purchase pur, purchase_line_item p
+WHERE pl.player_id = pur.player_id AND p.purchase_id = pur.purchase_id
+GROUP BY pl.player_id
+HAVING SUM(p.price) > 7500;
+
+
+-- Count purchases, not purchase_line_items and add 10 points for each
+-- Default value for loyalty_points is 0, so if there was no purchase made, 0 will be written
+
+ALTER TABLE player ADD COLUMN loyalty_points INTEGER DEFAULT 0;
+UPDATE player p
+SET loyalty_points = 10 * (
+    SELECT COUNT(*)
+    FROM purchase pur
+    WHERE pur.player_id = p.player_id
+);
+
+-- Insert a new studio called IndieForge (Netherlands) with email contact@indieforge.nl
+
+INSERT INTO studio (studio_name, studio_country, studio_email)
+VALUES ('IndieForge', 'Netherlands', 'contact@indieforge.nl');
+
+-- Add a new game with id 151, because our last id was 150
+
+INSERT INTO game (game_id, title, release_year,  game_price, rating,
+     platform_id, genre_id, studio_name)
+VALUES (151, 'Pixel Adventures', 2024, 19.99, 8.7, 1, 2, 'IndieForge');
+
+-- Change the country value to 'Germany' of a player 'BlazeJordan96'
+
+UPDATE player
+SET country = 'Germany'
+WHERE player_username = 'BlazeJordan96';
