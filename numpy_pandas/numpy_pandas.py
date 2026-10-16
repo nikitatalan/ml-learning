@@ -92,8 +92,64 @@ print(c.mean())
 print(c.prod(axis = 1))
 print(c.std())
 
+# random
 a = np.ones((4, 3, 2))
 rng = np.random.default_rng()  # the simplest way to generate random numbers
 b = rng.random((3, 2))
 print(a)
 print(b)
+
+# unique values
+a = np.array([11, 11, 12, 13, 14, 15, 16, 17, 12, 13, 11, 14, 18, 19, 20])
+unique_values, unique_indices = np.unique(a, return_index=True)
+print(unique_values)
+print(unique_indices)
+
+# occurrence count
+unique_values1, occurrence_counts = np.unique(a, return_counts=True)
+print(occurrence_counts)
+
+# for 2d array
+a_2d = np.array([[1, 2, 3, 4],
+                 [5, 6, 7, 8],
+                 [9, 10, 11, 12],
+                 [1, 2, 3, 4]])
+unique_rows, indices, occurrence_count = np.unique(a_2d, axis=0, return_counts=True, return_index=True)
+print(unique_rows)
+print(indices)
+print(occurrence_count)
+
+# reshaping and transposing
+arr = np.arange(6).reshape((2, 3))
+arr_t = arr.transpose()
+print(arr)
+print(arr_t)
+print(arr.T)
+
+# reversing an array
+arr = np.array([1, 2, 3, 4, 5, 6, 7, 8])
+print(arr, np.flip(arr))
+arr_2d = np.array([[1, 2, 3, 4],
+                   [5, 6, 7, 8],
+                   [9, 10, 11, 12]])
+print(np.flip(arr_2d, axis=1))
+arr_2d[1] = np.flip(arr_2d[1])
+print(arr_2d)
+arr_2d[:,1] = np.flip(arr_2d[:,1])
+print(arr_2d)
+
+# flattening
+x = np.array([[1, 2, 3, 4],
+              [5, 6, 7, 8],
+              [9, 10, 11, 12]])
+a1 = x.flatten()
+a1[0] = 99
+print(x)
+print(a1)
+
+a2 = x.ravel()
+a2[0] = 99
+print(x)
+print(a2)
+
+
