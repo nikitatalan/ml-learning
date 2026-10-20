@@ -1,4 +1,4 @@
-import numpy as np
+import numpy_practice as np
 
 x = np.random.rand(5, 3)
 print(x)
