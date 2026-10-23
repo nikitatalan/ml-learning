@@ -164,3 +164,67 @@ print(df.groupby("A")[["C", "D"]].sum())
 # Grouping by multiple columns label forms MultiIndex.
 print(df.groupby(["A", "B"]).sum())
 
+# reshaping
+
+arrays = [
+   ["bar", "bar", "baz", "baz", "foo", "foo", "qux", "qux"],
+   ["one", "two", "one", "two", "one", "two", "one", "two"],
+]
+
+
+index = pd.MultiIndex.from_arrays(arrays, names=["first", "second"])
+
+df = pd.DataFrame(np.random.randn(8, 2), index=index, columns=["A", "B"])
+
+df2 = df[:4]
+
+print(df2)
+
+# the stack() method "compresses" a level in the DataFrame's columns
+
+stacked = df2.stack()
+print(stacked)
+# the inverse operation of stack() is unstack(), which by default unstacks the last level
+print(stacked.unstack())
+print(stacked.unstack(1))
+print(stacked.unstack(0))
+
+# pivot tables
+
+df = pd.DataFrame(
+    {
+        "A": ["one", "one", "two", "three"] * 3,
+        "B": ["A", "B", "C"] * 4,
+        "C": ["foo", "foo", "foo", "bar", "bar", "bar"] * 2,
+        "D": np.random.randn(12),
+        "E": np.random.randn(12),
+    }
+)
+# pivot_table() pivots a DataFrame specifying the values, index and columns
+res = pd.pivot_table(df, values="D", index=["A", "B"], columns=["C"])
+print(res)
+
+# plotting
+import matplotlib.pyplot as plt
+
+plt.close("all")
+ts = pd.Series(np.random.randn(1000), index=pd.date_range("1/1/2000", periods=1000))
+
+ts = ts.cumsum()
+
+ts.plot();
+df = pd.DataFrame(
+    np.random.randn(1000, 4), index=ts.index, columns=["A", "B", "C", "D"]
+)
+
+
+df = df.cumsum()
+
+plt.figure();
+
+df.plot();
+
+plt.legend(loc='best');
+
+
+
